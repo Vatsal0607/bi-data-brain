@@ -1,4 +1,4 @@
--- JAFZA leased facilities by product, one row per account (v3: adds LICENCE_TYPE and MATCHED_ACTIVITIES)
+-- JAFZA leased facilities by product, one row per account
 -- Accounts = accounts holding a qualifying JAFZA licence (exact or close activity match)
 WITH
 -- Exact names from the request (lower-case, de-duplicated)
@@ -65,15 +65,10 @@ cur AS (
   SELECT LICENSE_NUMBER, ACCOUNT_NUMBER, ACCOUNT_NAME, LICENSE_TYPE,
          TRIM(LICENSE_ACTIVITY_DESCRIPTION) AS act
   FROM DPW_DL.T_DA_CX_LICENSE_MASTER
-  WHERE ZONE_NAME = 'Jebel Ali Free Zone'            -- CONFIRM licence zone logic
-    AND LIC_STATUS_OLD_FLAG = 'N'                    -- delete this line to use raw rows
+  WHERE ORG_NAME = 'JAFZA'                           -- CONFIRM R-LIC-017: exact ORG_NAME value; all zones included (R-LIC-016)
+    AND LICENSE_STATUS IN ('Active','Alive')         -- default licence scope (R-LIC-014); no current-row flag (R-LIC-002)
     AND LICENSE_ACTIVITY_DESCRIPTION IS NOT NULL
     AND ACCOUNT_NUMBER IS NOT NULL
-    AND LICENSE_STATUS IN ('Active','Alive','Awaiting Amendment','Awaiting Conversion',
-                           'Awaiting Creation','Awaiting Freeze','Awaiting Liquidation-TBA',
-                           'Awaiting Renewal','Awaiting Termination','Expired')
-    AND REG_STATUS IN ('Active','Awaiting Amendment','Awaiting Conversion','Awaiting Freeze',
-                       'Awaiting Renewal','Awaiting Termination','De Registered','Frozen')
 ),
 -- One row per account that holds at least one exact or close activity
 accts AS (
@@ -85,89 +80,129 @@ accts AS (
   WHERE ac.match_type IN ('EXACT','CLOSE')
   GROUP BY c.ACCOUNT_NUMBER
 ),
--- Distinct matched activities per account (exact first, then close), joined with commas
+-- Distinct activities per account (exact first, then close, then others), joined with commas
 acct_act AS (
   SELECT DISTINCT c.ACCOUNT_NUMBER, c.act, ac.match_type
   FROM cur c JOIN act_class ac ON ac.act = c.act
-  WHERE ac.match_type IN ('EXACT','CLOSE')
+  WHERE c.ACCOUNT_NUMBER IN (SELECT ACCOUNT_NUMBER FROM accts)   -- all activities, not only matched (R-REQ-007)
 ),
 acct_rank AS (
   SELECT ACCOUNT_NUMBER, act, match_type,
          ROW_NUMBER() OVER (PARTITION BY ACCOUNT_NUMBER
-                            ORDER BY CASE WHEN match_type = 'EXACT' THEN 0 ELSE 1 END, act) AS rn
+                            ORDER BY CASE WHEN match_type = 'EXACT' THEN 0 WHEN match_type = 'CLOSE' THEN 1 ELSE 2 END, act) AS rn
   FROM acct_act
 ),
 acct_str AS (
   SELECT ACCOUNT_NUMBER, COUNT(*) AS n_act,
-      COALESCE(MAX(CASE WHEN rn = 1 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 2 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 3 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 4 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 5 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 6 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 7 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 8 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 9 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 10 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 11 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 12 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 13 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 14 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 15 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 16 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 17 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 18 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 19 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 20 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 21 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 22 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 23 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 24 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 25 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 26 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 27 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 28 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 29 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 30 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 31 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 32 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 33 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 34 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 35 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 36 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 37 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 38 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 39 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 40 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 41 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 42 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 43 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 44 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 45 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 46 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 47 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 48 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 49 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 50 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 51 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 52 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 53 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 54 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 55 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 56 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 57 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 58 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 59 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
-      || COALESCE(MAX(CASE WHEN rn = 60 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' ELSE '' END END), '')
+      COALESCE(MAX(CASE WHEN rn = 1 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 2 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 3 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 4 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 5 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 6 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 7 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 8 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 9 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 10 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 11 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 12 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 13 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 14 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 15 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 16 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 17 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 18 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 19 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 20 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 21 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 22 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 23 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 24 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 25 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 26 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 27 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 28 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 29 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 30 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 31 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 32 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 33 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 34 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 35 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 36 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 37 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 38 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 39 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 40 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 41 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 42 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 43 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 44 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 45 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 46 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 47 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 48 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 49 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 50 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 51 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 52 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 53 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 54 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 55 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 56 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 57 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 58 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 59 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 60 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 61 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 62 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 63 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 64 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 65 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 66 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 67 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 68 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 69 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 70 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 71 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 72 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 73 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 74 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 75 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 76 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 77 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 78 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 79 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 80 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 81 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 82 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 83 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 84 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 85 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 86 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 87 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 88 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 89 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 90 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 91 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 92 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 93 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 94 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 95 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 96 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 97 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 98 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 99 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
+      || COALESCE(MAX(CASE WHEN rn = 100 THEN ', ' || act || CASE WHEN match_type = 'CLOSE' THEN ' [close]' WHEN match_type = 'EXACT' THEN ' [exact]' ELSE '' END END), '')
       AS raw_list
   FROM acct_rank
   GROUP BY ACCOUNT_NUMBER
 ),
--- Distinct licence types per account (from the licences that matched), joined with commas
+-- Distinct licence types per account (all in-scope licences), joined with commas
 acct_type AS (
   SELECT DISTINCT c.ACCOUNT_NUMBER, TRIM(c.LICENSE_TYPE) AS LICENSE_TYPE
-  FROM cur c JOIN act_class ac ON ac.act = c.act
-  WHERE ac.match_type IN ('EXACT','CLOSE')
+  FROM cur c
+  WHERE c.ACCOUNT_NUMBER IN (SELECT ACCOUNT_NUMBER FROM accts)
     AND c.LICENSE_TYPE IS NOT NULL AND TRIM(c.LICENSE_TYPE) <> ''
 ),
 type_rank AS (
@@ -208,8 +243,8 @@ SELECT a.ACCOUNT_NUMBER,
        CASE WHEN a.has_exact = 1 AND a.has_close = 1 THEN 'EXACT + CLOSE'
             WHEN a.has_exact = 1 THEN 'EXACT'
             ELSE 'CLOSE' END AS LICENCE_MATCH_TYPE,
-       CASE WHEN s.n_act > 60 THEN SUBSTR(s.raw_list, 3) || ', ...'
-            ELSE SUBSTR(s.raw_list, 3) END AS MATCHED_ACTIVITIES,   -- close matches tagged [close]
+       CASE WHEN s.n_act > 100 THEN SUBSTR(s.raw_list, 3) || ', ...'
+            ELSE SUBSTR(s.raw_list, 3) END AS ALL_ACTIVITIES,   -- all activities; exact tagged [exact], close tagged [close] (R-REQ-007)
        COUNT(DISTINCT f.LOCATION_CODE) AS TOTAL_FACILITIES,
        COUNT(DISTINCT CASE WHEN f.product = '1 Plot'            THEN f.LOCATION_CODE END) AS PLOT,
        COUNT(DISTINCT CASE WHEN f.product = '2 LIU Warehouse'   THEN f.LOCATION_CODE END) AS LIU_WAREHOUSE,

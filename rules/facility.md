@@ -8,17 +8,17 @@
 - **Last verified:** 2026-10-19
 
 ### R-FAC-002 JAFZA at facility level
-- **Status:** ASSUMPTION
-- **Rule:** JAFZA means `ORGANIZATION_NAME = 'JAFZA'`. This includes ZONE_NAME values Jafza North, Jafza South, TechnoPark, Emaar, Limitless, Fresh Fruit & Vegetable, JAFZA and blank. Other organisations in the table: National Industries Park, FVM, Dubai Auto Zone, DAM, Textile City.
+- **Status:** USER-CONFIRMED
+- **Rule:** JAFZA means `ORGANIZATION_NAME = 'JAFZA'`, keeping all its zones: Jafza North, Jafza South, TechnoPark, Emaar, Limitless, Fresh Fruit & Vegetable, JAFZA and blank. Other organisations in the table: National Industries Park, FVM, Dubai Auto Zone, DAM, Textile City.
 - **SQL:** `ORGANIZATION_NAME = 'JAFZA'`
-- **Evidence:** Organisation x zone profile (Query_3.csv), 2026-10-16. Not yet confirmed by the user.
+- **Evidence:** User answer, 2026-10-19: keep all. Profile from Query_3.csv, 2026-10-16.
 - **Last verified:** 2026-10-19
 
 ### R-FAC-003 Leased facility
-- **Status:** ASSUMPTION
-- **Rule:** Leased means `STATUS_GROUP = 'Leased'`. This group contains the statuses Leased, Under Renewal, Under Legal and Under Termination. It does not contain Under Amendment.
+- **Status:** USER-CONFIRMED
+- **Rule:** Leased means `STATUS_GROUP = 'Leased'`. The group contains Leased, Under Renewal, Under Legal and Under Termination; it excludes Under Amendment.
 - **SQL:** `STATUS_GROUP = 'Leased'`
-- **Evidence:** Status-group x status crosstab, 2026-10-16. Not yet confirmed by the user.
+- **Evidence:** User answer, 2026-10-19: yes. Crosstab from 2026-10-16.
 - **Last verified:** 2026-10-19
 
 ### R-FAC-004 Product is PRODUCT_SPACE_TYPE

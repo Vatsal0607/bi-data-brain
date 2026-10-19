@@ -12,6 +12,10 @@ This repo is the BI Data Brain for P&Z data requests (Vertica, schema `DPW_DL`).
 6. Test logic with `python3 tests/sqlite_harness.py` where possible. SQLite proves logic, not Vertica syntax. Say which of the two was tested.
 7. Vertica pitfalls: see `rules/sql_vertica.md` (for example, LISTAGG is not available in this environment).
 
+### Defaults versus request-specific filters
+
+Filters, status ticks, activity lists and keyword lists given for one request apply to that request only (R-REQ-008). Start every query from the default rules (for example R-LIC-014, R-REQ-006) and narrow only as the request says. Output cells show everything the table holds (R-REQ-007); request lists only decide which accounts or licences qualify.
+
 ## 2. Keeping the brain current (mandatory)
 
 Whenever the user answers a question, corrects a result, pastes profiling output, or changes a requirement:

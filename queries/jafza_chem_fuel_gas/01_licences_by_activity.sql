@@ -60,20 +60,15 @@ act_class AS (
   FROM acts a CROSS JOIN ex e CROSS JOIN kw k
   GROUP BY a.act
 ),
--- Rows in scope: JAFZA, current rows, ticked licence statuses, ticked registration statuses
+-- Rows in scope: JAFZA organisation (all zones), Active / Alive licences
 cur AS (
   SELECT SUR_GKEY, LICENSE_NUMBER, ACCOUNT_NUMBER, ACCOUNT_NAME, ORG_NAME, ZONE_NAME,
          LICENSE_STATUS, REG_STATUS, BI_CREATED,
          TRIM(LICENSE_ACTIVITY_DESCRIPTION) AS act
   FROM DPW_DL.T_DA_CX_LICENSE_MASTER
-  WHERE ZONE_NAME = 'Jebel Ali Free Zone'            -- CONFIRM zone logic
-    AND LIC_STATUS_OLD_FLAG = 'N'                    -- delete this line to use raw rows
+  WHERE ORG_NAME = 'JAFZA'                           -- CONFIRM R-LIC-017: exact ORG_NAME value; all zones included (R-LIC-016)
+    AND LICENSE_STATUS IN ('Active','Alive')         -- default licence scope (R-LIC-014); no current-row flag (R-LIC-002)
     AND LICENSE_ACTIVITY_DESCRIPTION IS NOT NULL
-    AND LICENSE_STATUS IN ('Active','Alive','Awaiting Amendment','Awaiting Conversion',
-                           'Awaiting Creation','Awaiting Freeze','Awaiting Liquidation-TBA',
-                           'Awaiting Renewal','Awaiting Termination','Expired')
-    AND REG_STATUS IN ('Active','Awaiting Amendment','Awaiting Conversion','Awaiting Freeze',
-                       'Awaiting Renewal','Awaiting Termination','De Registered','Frozen')
 ),
 lic_act AS (
   SELECT DISTINCT c.LICENSE_NUMBER, c.act, ac.match_type

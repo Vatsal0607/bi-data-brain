@@ -7,11 +7,11 @@
 - **Evidence:** Rows-per-licence histogram profiled in session (up to about 39 rows for one licence; verify the maximum).
 - **Last verified:** 2026-10-19
 
-### R-LIC-002 Current-row filter
-- **Status:** ASSUMPTION
-- **Rule:** Keep only current rows with `LIC_STATUS_OLD_FLAG = 'N'`.
-- **SQL:** `AND LIC_STATUS_OLD_FLAG = 'N'`
-- **Evidence:** Chosen after `IS_PREFERRED = 1` was rejected (R-LIC-004). Not yet confirmed by the data owner.
+### R-LIC-002 Current-row filter is not a default
+- **Status:** REJECTED
+- **Rule:** Do not filter on `LIC_STATUS_OLD_FLAG = 'N'` by default. The user wants all Active and Alive licences considered in every request (R-LIC-014). What the flag actually means is still to be learned from the profiling pack.
+- **SQL:** n/a
+- **Evidence:** User answer, 2026-10-19: no; that was for a specific request. Earlier assumption was Claude's own.
 - **Last verified:** 2026-10-19
 
 ### R-LIC-003 Always distinct-count licences
@@ -42,37 +42,37 @@
 - **Evidence:** Sample of `ALL_LIC_ACTIVITIES` reviewed in session.
 - **Last verified:** 2026-10-19
 
-### R-LIC-007 In-scope licence statuses
+### R-LIC-007 Request-specific licence status list (JAFZA chem / fuel / gas request only)
 - **Status:** USER-CONFIRMED
-- **Rule:** Licence status in: Active, Alive, Awaiting Amendment, Awaiting Conversion, Awaiting Creation, Awaiting Freeze, Awaiting Liquidation-TBA, Awaiting Renewal, Awaiting Termination, Expired. Source: ticked values in the user's Excel filter.
+- **Rule:** For the 2026-10-16 request only, the Excel filter ticked: Active, Alive, Awaiting Amendment, Awaiting Conversion, Awaiting Creation, Awaiting Freeze, Awaiting Liquidation-TBA, Awaiting Renewal, Awaiting Termination, Expired. This is not the default; the default is R-LIC-014. Reuse only if a request names these statuses.
 - **SQL:** `LICENSE_STATUS IN ('Active','Alive','Awaiting Amendment','Awaiting Conversion','Awaiting Creation','Awaiting Freeze','Awaiting Liquidation-TBA','Awaiting Renewal','Awaiting Termination','Expired')`
-- **Evidence:** User shared the Excel filter screenshot, 2026-10-16.
+- **Evidence:** User shared the Excel filter screenshot, 2026-10-16; scope clarified 2026-10-19.
 - **Last verified:** 2026-10-19
 
-### R-LIC-008 In-scope registration statuses
+### R-LIC-008 Request-specific registration status list (JAFZA chem / fuel / gas request only)
 - **Status:** USER-CONFIRMED
-- **Rule:** Registration status in: Active, Awaiting Amendment, Awaiting Conversion, Awaiting Freeze, Awaiting Renewal, Awaiting Termination, De Registered, Frozen. Source: ticked values in the user's Excel filter.
+- **Rule:** For the 2026-10-16 request only, the Excel filter ticked: Active, Awaiting Amendment, Awaiting Conversion, Awaiting Freeze, Awaiting Renewal, Awaiting Termination, De Registered, Frozen. Not a default (see R-LIC-015).
 - **SQL:** `REG_STATUS IN ('Active','Awaiting Amendment','Awaiting Conversion','Awaiting Freeze','Awaiting Renewal','Awaiting Termination','De Registered','Frozen')`
-- **Evidence:** User shared the Excel filter screenshot, 2026-10-16.
+- **Evidence:** User shared the Excel filter screenshot, 2026-10-16; scope clarified 2026-10-19.
 - **Last verified:** 2026-10-19
 
-### R-LIC-009 JAFZA at licence level
-- **Status:** ASSUMPTION
-- **Rule:** A JAFZA licence row has `ZONE_NAME = 'Jebel Ali Free Zone'`. The user's filter was on the "Org. Zone" field; the exact column mapping and its alignment with `ORG_NAME` are unconfirmed.
-- **SQL:** `ZONE_NAME = 'Jebel Ali Free Zone'`
-- **Evidence:** Alignment profile (ORG_NAME x ZONE_NAME) requested, result not yet recorded.
+### R-LIC-009 JAFZA at licence level by ZONE_NAME
+- **Status:** SUPERSEDED
+- **Rule:** Replaced by R-LIC-016. `ZONE_NAME = 'Jebel Ali Free Zone'` is too narrow: JAFZA has several zones and all must be considered.
+- **SQL:** n/a
+- **Evidence:** User answer, 2026-10-19.
 - **Last verified:** 2026-10-19
 
 ### R-LIC-010 Exact activity match method
 - **Status:** USER-CONFIRMED
-- **Rule:** Exact matches compare `LOWER(TRIM(LICENSE_ACTIVITY_DESCRIPTION))` with the requested names. Exact and close matches are flagged separately. The requested list has 20 unique names (23 lines in the original ask); 17 of 20 were found with exact text in the data.
+- **Rule:** Exact matches compare `LOWER(TRIM(LICENSE_ACTIVITY_DESCRIPTION))` with a requested name list; close matches are flagged separately. The list (20 unique names for the 2026-10-16 request; 17 found with exact text) belongs to that request only. Each future request supplies its own activity list.
 - **SQL:** `LOWER(TRIM(LICENSE_ACTIVITY_DESCRIPTION)) = e.nm`
-- **Evidence:** User instruction 2026-10-16: match the ask, plus anything closely matching, flagged separately.
+- **Evidence:** User instruction 2026-10-16: match the ask, plus anything closely matching, flagged separately. Scope clarified 2026-10-19.
 - **Last verified:** 2026-10-19
 
-### R-LIC-011 Close-match keywords
+### R-LIC-011 Close-match keywords (request-specific)
 - **Status:** ASSUMPTION
-- **Rule:** An activity is a close match when, padded with spaces and lower-cased, it contains one of: chemical, solvent, ` acid`, alkal, blending, petro, fuel, refin, ` gas `, ` oil `, ` lng `, ` lpg `, liquef, bottling, tank, pipeline, waste, scrap, electricity, power gener. Keyword list was proposed by Claude, not confirmed.
+- **Rule:** For the 2026-10-16 request, an activity was a close match when, padded with spaces and lower-cased, it contains one of: chemical, solvent, ` acid`, alkal, blending, petro, fuel, refin, ` gas `, ` oil `, ` lng `, ` lpg `, liquef, bottling, tank, pipeline, waste, scrap, electricity, power gener. Proposed by Claude. The answer "Yes" to "anything to add or remove?" is ambiguous and awaits clarification. Keywords are per request, not global.
 - **SQL:** `LOWER(' ' || act || ' ') LIKE '%' || k || '%'`
 - **Evidence:** See `queries/jafza_chem_fuel_gas/01_licences_by_activity.sql`.
 - **Last verified:** 2026-10-19
@@ -89,4 +89,32 @@
 - **Rule:** Blank activity codes were suspected as the cause of odd duplicate counts. Preferred rows have no blank codes, so this is not the explanation.
 - **SQL:** n/a
 - **Evidence:** Completeness check (query F) in session.
+- **Last verified:** 2026-10-19
+
+### R-LIC-014 Default licence scope: Active and Alive
+- **Status:** USER-CONFIRMED
+- **Rule:** Unless a request says otherwise, consider all licences with `LICENSE_STATUS` Active or Alive, with no current-row flag filter. Other statuses enter only when the request names them.
+- **SQL:** `LICENSE_STATUS IN ('Active','Alive')`
+- **Evidence:** User statement, 2026-10-19.
+- **Last verified:** 2026-10-19
+
+### R-LIC-015 No registration-status filter by default
+- **Status:** ASSUMPTION
+- **Rule:** Registration status is not filtered by default. The ticked list in R-LIC-008 was request-specific. Confirm whether a default registration-status rule is wanted.
+- **SQL:** n/a
+- **Evidence:** Inferred from the 2026-10-19 answer that the Excel ticks were request-specific.
+- **Last verified:** 2026-10-19
+
+### R-LIC-016 JAFZA at licence level is the organisation, all zones
+- **Status:** USER-CONFIRMED
+- **Rule:** A JAFZA licence is identified by `ORG_NAME`, not by `ZONE_NAME`. All zones under the JAFZA organisation are included unless the request narrows them (R-REQ-006).
+- **SQL:** `ORG_NAME = 'JAFZA'` (value to be verified, R-LIC-017)
+- **Evidence:** User statement, 2026-10-19: use Org name; JAFZA has multiple zones; all considered.
+- **Last verified:** 2026-10-19
+
+### R-LIC-017 Exact ORG_NAME value for JAFZA in the licence master
+- **Status:** ASSUMPTION
+- **Rule:** The query assumes the value is `JAFZA`, matching the facility table. It has not been seen in licence-master output. If it differs, the query returns no rows; change it in the `cur` CTE only. Run profiling query 1 in `profiling/license_master_profile.sql`.
+- **SQL:** `ORG_NAME = 'JAFZA'`
+- **Evidence:** Not yet profiled.
 - **Last verified:** 2026-10-19

@@ -1,11 +1,16 @@
 # Open questions
 
-Each `ASSUMPTION` rule must appear here until a human confirms or rejects it. Format: `- [ ] R-XXX-NNN: question`. Tick and move to CHANGELOG when resolved.
+Each `ASSUMPTION` rule must appear here until a human confirms or rejects it. Format: `- [ ] R-XXX-NNN: question`. Tick and move to Resolved when answered.
 
-- [ ] R-LIC-002: Is `LIC_STATUS_OLD_FLAG = 'N'` the correct current-row filter for the licence master?
-- [ ] R-LIC-009: Is JAFZA at licence level `ZONE_NAME = 'Jebel Ali Free Zone'`, or should it use `ORG_NAME`? Alignment check (profile ORG_NAME x ZONE_NAME) was sent but no result is recorded.
-- [ ] R-LIC-011: Is the proposed close-match keyword list right (and complete)?
-- [ ] R-FAC-002: Does "JAFZA" on the facility side mean `ORGANIZATION_NAME = 'JAFZA'` (which includes Jafza North, Jafza South, TechnoPark, Emaar, Limitless and others)?
-- [ ] R-FAC-003: Does "leased" mean `STATUS_GROUP = 'Leased'` (includes Under Renewal, Under Legal, Under Termination)?
-- [ ] R-REQ-004: Should MATCHED_ACTIVITIES show matched activities only (current) or all activities on the licence?
-- [ ] R-REQ-005: Is a combined, comma-separated licence type per account the right treatment when an account holds several types?
+- [ ] R-LIC-011: Does "Yes" to "anything to add or remove?" mean the close-match keyword list is fine as is, or that changes are wanted?
+- [ ] R-LIC-015: Should any registration status filter apply by default, or none?
+- [ ] R-LIC-017: What exact `ORG_NAME` value(s) identify JAFZA in the licence master? Run profiling query 1.
+- [ ] R-REQ-005: Show the account's licence types combined in one cell (current), or in another shape?
+
+## Resolved
+
+- [x] 2026-10-19 R-LIC-002: current-row flag is not a default (rejected).
+- [x] 2026-10-19 R-LIC-009: JAFZA by organisation, all zones (superseded by R-LIC-016).
+- [x] 2026-10-19 R-FAC-002: JAFZA facilities by organisation, keep all zones (confirmed).
+- [x] 2026-10-19 R-FAC-003: leased = STATUS_GROUP Leased (confirmed).
+- [x] 2026-10-19 R-REQ-004: activities column shows all activities (superseded by R-REQ-007).
