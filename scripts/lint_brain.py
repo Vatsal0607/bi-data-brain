@@ -35,7 +35,7 @@ for f in sorted((root / "rules").glob("*.md")):
         rules[rid] = st
 
 # every id referenced anywhere must exist
-pat = re.compile(r"R-(?:LIC|FAC|REQ|SQL)-\d{3}")
+pat = re.compile(r"R-(?:LIC|FAC|REQ|SQL|MAP)-\d{3}")
 for p in root.rglob("*"):
     if p.suffix in {".md", ".sql", ".py"} and ".git" not in p.parts and p.name != "lint_brain.py":
         for rid in set(pat.findall(p.read_text())):
@@ -56,6 +56,10 @@ for rid in re.findall(r"(?m)^- \[ \] (R-[A-Z]+-\d{3}):", oq):
 for t in ["T_DA_CX_LICENSE_MASTER", "T_DA_CX_CURR_FACILITY_INFO"]:
     if not (root / "tables" / (t + ".md")).exists():
         errors.append("missing table page " + t)
+# every mapping rule file needs its mapping page
+for m in ["OSR_PAX_MAPPING"]:
+    if not (root / "mappings" / (m + ".md")).exists():
+        errors.append("missing mapping page " + m)
 
 if errors:
     print("\n".join("ERROR: " + e for e in errors))

@@ -4,7 +4,7 @@ This repo is the BI Data Brain for P&Z data requests (Vertica, schema `DPW_DL`).
 
 ## 1. Turning a request into a query
 
-1. Identify the tables the request touches. Read `tables/<TABLE>.md`, `joins.md`, `glossary.md` and the relevant `rules/*.md` before writing SQL.
+1. Identify the tables the request touches. Read `tables/<TABLE>.md`, `joins.md`, `glossary.md` and the relevant `rules/*.md` before writing SQL. If the request needs an attribute held in a reference file (for example OSR pax or area), read its page in `mappings/` too.
 2. Look for a similar past request in `requests/` and reuse its query pattern.
 3. Apply rules by ID. In the SQL, mark each rule that is not `USER-CONFIRMED` or `DATA-VERIFIED` with a `-- CONFIRM R-XXX-NNN` comment.
 4. In the reply, list every `ASSUMPTION` the query depends on in one short block, with its rule ID.

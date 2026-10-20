@@ -11,6 +11,7 @@ Living knowledge base for P&Z Business Intelligence data requests on Vertica (sc
 | `CLAUDE.md` | Operating protocol: how Claude turns a request into a query, and how it updates this repo after every correction |
 | `rules/` | One entry per business or technical rule, each with an ID, a status, evidence and a last-verified date |
 | `tables/` | One page per table: grain, keys, columns, value profiles, gotchas |
+| `mappings/` | One page per reference file supplied by the user (for example the OSR PAX mapping): grain, join key, value profile |
 | `glossary.md` | Business terms mapped to the rules that define them |
 | `joins.md` | Confirmed join paths between tables |
 | `queries/` | Delivered SQL, grouped by request |

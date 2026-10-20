@@ -5,6 +5,7 @@ import sys
 root = pathlib.Path(__file__).resolve().parent.parent
 parts = ["README.md", "glossary.md", "joins.md", "OPEN_QUESTIONS.md"]
 parts += sorted(str(p.relative_to(root)) for p in (root / "tables").glob("*.md"))
+parts += sorted(str(p.relative_to(root)) for p in (root / "mappings").glob("*.md"))
 parts += sorted(str(p.relative_to(root)) for p in (root / "rules").glob("*.md"))
 out = []
 for rel in parts:

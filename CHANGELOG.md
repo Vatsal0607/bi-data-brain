@@ -2,6 +2,12 @@
 
 Newest first. One line per rule change or structural change.
 
+## 2026-10-20 (OSR PAX mapping)
+- Added `mappings/OSR_PAX_MAPPING.md` and `rules/osr_mapping.md` (R-MAP-001 to R-MAP-011) from the user's OSR PAX mapping file: 11,447 JAFZA OSR locations, 151 buildings, 4 clusters.
+- R-MAP-004 DATA-VERIFIED: Max Pax follows room type, with an executive uplift in S2C2EB04; reproduces 11,446 of 11,447 rows.
+- Join to facilities (R-MAP-002) and seven interpretation points left as ASSUMPTION with open questions.
+- Added `profiling/osr_mapping_join_check.sql` and `scripts/check_osr_mapping.py`; linter and snapshot builder now cover `mappings/` and R-MAP rules.
+
 ## 2026-10-19 (answers to open questions)
 - R-LIC-002 REJECTED as default. New default scope R-LIC-014: Active and Alive licences, no current-row flag.
 - R-LIC-007 / R-LIC-008 re-scoped to the 2026-10-16 request only; R-LIC-015 added (no default registration-status filter, assumption).
